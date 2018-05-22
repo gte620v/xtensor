@@ -30,6 +30,7 @@ namespace xt
         using value_expression = VE;
         using flag_expression = FE;
         using temporary_type = xoptional_assembly<VE, FE>;
+        using shape_type = typename VE::inner_shape_type;
     };
 
     template <class VE, class FE>
@@ -135,6 +136,7 @@ namespace xt
     {
         using value_expression = std::remove_reference_t<VEC>;
         using flag_expression = std::remove_reference_t<FEC>;
+        using shape_type = typename std::decay_t<VEC>::inner_shape_type;
         using temporary_type = xoptional_assembly<value_expression, flag_expression>;
     };
 

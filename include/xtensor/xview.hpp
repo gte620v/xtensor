@@ -33,18 +33,19 @@ namespace xt
      * xview declaration *
      *********************/
 
+    template <class ST, class... S>
+    struct xview_shape_type;
+
     template <class CT, class... S>
     struct xcontainer_inner_types<xview<CT, S...>>
     {
         using xexpression_type = std::decay_t<CT>;
+        using shape_type = typename xview_shape_type<typename xexpression_type::shape_type, S...>::type;
         using temporary_type = view_temporary_type_t<xexpression_type, S...>;
     };
 
     template <bool is_const, class CT, class... S>
     class xview_stepper;
-
-    template <class ST, class... S>
-    struct xview_shape_type;
 
     template <class CT, class... S>
     struct xiterable_inner_types<xview<CT, S...>>
