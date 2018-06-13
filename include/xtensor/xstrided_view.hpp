@@ -39,6 +39,7 @@ namespace xt
     struct xiterable_inner_types<xstrided_view<CT, S, L, FST>>
     {
         using inner_shape_type = S;
+        using shape_type = S;
         using inner_strides_type = inner_shape_type;
         using inner_backstrides_type_type = inner_shape_type;
 
