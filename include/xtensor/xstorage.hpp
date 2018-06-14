@@ -1337,10 +1337,90 @@ namespace xt
 
         XTENSOR_CONST T m_data[N > 0 ? N : 1];
     };
+
+
+#ifdef _MSC_VER
+    #define XTENSOR_CONSTEXPR_ENHANCED_STATIC
+#else
+    #define XTENSOR_CONSTEXPR_ENHANCED_STATIC constexpr static
+    #define XTENSOR_HAS_CONSTEXPR_ENHANCED
+#endif
+
+    /**
+     * @class fixed_shape
+     * Fixed shape implementation for compile time defined arrays.
+     * @sa xshape
+     */
+    template <std::size_t... X>
+    class fixed_shape
+    {
+    public:
+
+        using cast_type = const_array<std::size_t, sizeof...(X)>;
+        using value_type = std::size_t;
+        using size_type = std::size_t;
+
+        constexpr static std::size_t size()
+        {
+            return sizeof...(X);
+        }
+
+        constexpr operator cast_type() const
+        {
+            return cast_type({X...});
+        }
+
+        constexpr auto begin() const
+        {
+            return m_array.begin();
+        }
+
+        constexpr auto end() const
+        {
+            return m_array.end();
+        }
+
+        auto rbegin() const
+        {
+            return m_array.rbegin();
+        }
+
+        auto rend() const
+        {
+            return m_array.rend();
+        }
+
+        constexpr auto cbegin() const
+        {
+            return m_array.cbegin();
+        }
+
+        constexpr auto cend() const
+        {
+            return m_array.cend();
+        }
+
+        constexpr std::size_t operator[](std::size_t idx) const
+        {
+            return m_array[idx];
+        }
+
+    private:
+
+         XTENSOR_CONSTEXPR_ENHANCED_STATIC cast_type m_array = {X...};
+    };
+
+#ifdef XTENSOR_HAS_CONSTEXPR_ENHANCED
+    template <std::size_t... X>
+    constexpr typename fixed_shape<X...>::cast_type fixed_shape<X...>::m_array;
+#endif
+
 }
 
 #undef XTENSOR_CONST
 #undef XTENSOR_ALIGNMENT
 #undef XTENSOR_SELECT_ALIGN
+#undef XTENSOR_HAS_CONSTEXPR_ENHANCED
+#undef XTENSOR_CONSTEXPR_ENHANCED_STATIC
 
 #endif

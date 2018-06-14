@@ -77,6 +77,12 @@ namespace xt
         {
             using type = std::array<V, L>;
         };
+
+        template <std::size_t... I>
+        struct index_type_impl<fixed_shape<I...>>
+        {
+            using type = std::array<std::size_t, sizeof...(I)>;
+        };
     }
 
     template <class C>

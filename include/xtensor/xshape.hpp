@@ -39,6 +39,9 @@ namespace xtl
 {
     namespace detail
     {
+        template <class S>
+        struct sequence_builder;
+
         template <std::size_t... I>
         struct sequence_builder<xt::fixed_shape<I...>>
         {
@@ -198,6 +201,13 @@ namespace xt
         struct select_promote_index<true, true, S...>
         {
             using type = typename broadcast_fixed<S...>::type;
+        };
+
+        template <>
+        struct select_promote_index<true, true>
+        {
+            // todo correct? used in xvectorize
+            using type = dynamic_shape<std::size_t>;
         };
 
         template <class... S>

@@ -24,6 +24,7 @@
 #include "xiterable.hpp"
 #include "xlayout.hpp"
 #include "xscalar.hpp"
+#include "xshape.hpp"
 #include "xstrides.hpp"
 #include "xtensor_simd.hpp"
 #include "xutils.hpp"
@@ -143,8 +144,7 @@ namespace xt
     template <class F, class R, class... CT>
     struct xiterable_inner_types<xfunction_base<F, R, CT...>>
     {
-        using shape_type = promote_shape_t<typename std::decay_t<CT>::shape_type...>;
-        using inner_shape_type = index_from_shape_t<shape_type>;
+        using inner_shape_type = promote_shape_t<typename std::decay_t<CT>::shape_type...>;
         using const_stepper = xfunction_stepper<F, R, CT...>;
         using stepper = const_stepper;
     };
@@ -188,8 +188,8 @@ namespace xt
         using simd_value_type = typename detail::functor_return_type<detail::common_value_type_t<std::decay_t<CT>...>, R>::simd_type;
         using simd_argument_type = xsimd::simd_type<detail::common_value_type_t<std::decay_t<CT>...>>;
         using iterable_base = xconst_iterable<xfunction_base<F, R, CT...>>;
-        using shape_type = typename iterable_base::shape_type;
         using inner_shape_type = typename iterable_base::inner_shape_type;
+        using shape_type = inner_shape_type;
 
         using stepper = typename iterable_base::stepper;
         using const_stepper = typename iterable_base::const_stepper;
@@ -336,6 +336,8 @@ namespace xt
         const_storage_iterator build_iterator(Func&& f, std::index_sequence<I...>) const noexcept;
 
         size_type compute_dimension() const noexcept;
+
+        void compute_cached_shape() const;
 
         tuple_type m_e;
         functor_type m_f;
@@ -585,18 +587,28 @@ namespace xt
         return dimension;
     }
 
+    template <class F, class R, class... CT>
+    inline void xfunction_base<F, R, CT...>::compute_cached_shape() const
+    {
+        m_shape = xtl::make_sequence<xindex_type_t<inner_shape_type>>(compute_dimension(), size_type(0));
+        m_shape_trivial = broadcast_shape(m_shape, false);
+        m_shape_computed = true;
+    }
+
     /**
      * Returns the shape of the xfunction.
      */
     template <class F, class R, class... CT>
     inline auto xfunction_base<F, R, CT...>::shape() const -> const inner_shape_type&
     {
-        if (!m_shape_computed)
+        xtl::mpl::static_if<!detail::is_fixed<inner_shape_type>::value>([&](auto self)
         {
-            m_shape = xtl::make_sequence<inner_shape_type>(compute_dimension(), size_type(0));
-            m_shape_trivial = broadcast_shape(m_shape, false);
-            m_shape_computed = true;
-        }
+            if(!this->m_shape_computed)
+            {
+                self(this)->compute_cached_shape();
+            }
+        },
+        [](auto self){});
         return m_shape;
     }
 

@@ -344,8 +344,8 @@ namespace xt
         EXPECT_EQ(a_lz, a_gd);
         EXPECT_TRUE(is_arr(a_gd.shape()));
 
-        a_lz = sum(a, {1});
-        auto a_gd_1 = sum(a, {1}, evaluation_strategy::immediate());
+        a_lz = sum(a, xt::dynamic_shape<std::size_t>{1});
+        auto a_gd_1 = sum(a, xt::dynamic_shape<std::size_t>{1}, evaluation_strategy::immediate());
         auto b_gd_1 = sum(b, {1}, evaluation_strategy::immediate());
         EXPECT_EQ(a_lz, a_gd_1);
         EXPECT_EQ(a_lz, b_gd_1);
@@ -358,7 +358,7 @@ namespace xt
         EXPECT_EQ(a_gd_2.dimension(), 1);
 
     #ifndef X_OLD_CLANG
-        EXPECT_TRUE(is_arr(a_gd_1.shape()));
+        // EXPECT_TRUE(is_arr(a_gd_1.shape()));
         EXPECT_TRUE(is_arr(a_gd_2.shape()));
     #endif
 

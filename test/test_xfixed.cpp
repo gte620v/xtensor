@@ -73,7 +73,7 @@ namespace xt
         EXPECT_THROW(a.resize({2, 2}), std::runtime_error);
 #endif
         // reshaping fixed container
-        EXPECT_THROW(a.reshape({1, 9}), std::runtime_error);
+        EXPECT_THROW(a.reshape({{1, 9}}), std::runtime_error);
         EXPECT_NO_THROW(a.reshape({3, 4}));
         EXPECT_NO_THROW(a.reshape({3, 4}, XTENSOR_DEFAULT_LAYOUT));
         EXPECT_THROW(a.reshape({3, 4}, layout_type::any), std::runtime_error);
@@ -134,6 +134,18 @@ namespace xt
         EXPECT_EQ(a.layout(), layout_type::row_major);
         xtensor_fixed<double, xshape<2, 2>, layout_type::column_major> b;
         EXPECT_EQ(b.layout(), layout_type::column_major);
+    }
+
+    TEST(xtensor_fixed, nulld)
+    {
+        xtensor_fixed<double, xshape<>> a({123});
+        xtensor_fixed<double, xshape<>> b({4});
+        xtensor_fixed<double, xshape<>> c({123});
+
+        EXPECT_EQ(a(), 123);
+        b += 432;
+        EXPECT_EQ(b(), 432 + 4);
+        EXPECT_EQ(c, a);
     }
 }
 

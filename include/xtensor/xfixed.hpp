@@ -33,35 +33,9 @@
 
 namespace xt
 {
-    /**
-     * @class fixed_shape
-     * Fixed shape implementation for compile time defined arrays.
-     * @sa xshape
-     */
-    template <std::size_t... X>
-    class fixed_shape
-    {
-    public:
 
-        using cast_type = const_array<std::size_t, sizeof...(X)>;
-        using value_type = std::size_t;
-        using size_type = std::size_t;
-
-        constexpr static std::size_t size()
-        {
-            return sizeof...(X);
-        }
-
-        constexpr fixed_shape()
-        {
-        }
-
-        constexpr operator cast_type() const
-        {
-            return cast_type({X...});
-        }
-    };
 }
+
 
 namespace std
 {
@@ -219,6 +193,13 @@ namespace xt
             constexpr static std::size_t value = X;
         };
 
+        template <>
+        struct compute_size_impl<>
+        {
+            // support for 0D xtensor fixed (empty shape = xshape<>)
+            constexpr static std::size_t value = 1;
+        };
+
         // TODO unify with constexpr compute_size when dropping MSVC 2015
         template <class T>
         struct fixed_compute_size;
@@ -236,6 +217,12 @@ namespace xt
         struct get_init_type_impl<V, Y>
         {
             using type = V[Y];
+        };
+
+        template <class V>
+        struct get_init_type_impl<V>
+        {
+            using type = V[1];
         };
 
         template <class V, std::size_t Y, std::size_t... X>
@@ -334,7 +321,6 @@ namespace xt
         constexpr static std::size_t N = std::tuple_size<shape_type>::value;
 
         xfixed_container();
-        explicit xfixed_container(value_type v);
         explicit xfixed_container(const inner_shape_type& shape, layout_type l = L);
         explicit xfixed_container(const inner_shape_type& shape, value_type v, layout_type l = L);
 
@@ -358,10 +344,17 @@ namespace xt
         template <class E>
         xfixed_container& operator=(const xexpression<E>& e);
 
-        template <class ST = shape_type>
-        void resize(ST&& shape, bool force = false) const;
+        template <class ST = std::array<std::size_t, N>>
+        static xfixed_container from_shape(ST&& /*s*/);
 
+        template <class ST = std::array<std::size_t, N>>
+        void resize(ST&& shape, bool force = false) const;
         template <class ST = shape_type>
+        void resize(ST&& shape, layout_type l) const;
+        template <class ST = shape_type>
+        void resize(ST&& shape, const strides_type& strides) const;
+
+        template <class ST = std::array<std::size_t, N>>
         void reshape(ST&& shape, layout_type layout = L) const;
 
         template <class ST>
@@ -530,17 +523,6 @@ namespace xt
     }
 
     /**
-     * Create an xfixed_container, and initialize with the value of v.
-     *
-     * @param v the fill value
-     */
-    template <class ET, class S, layout_type L, class Tag>
-    inline xfixed_container<ET, S, L, Tag>::xfixed_container(value_type v)
-    {
-        std::fill(this->begin(), this->end(), v);
-    }
-
-    /**
      * Create an uninitialized xfixed_container.
      * Note this function is only provided for homogenity, and the shape & layout argument is
      * disregarded (the template shape is always used).
@@ -549,8 +531,12 @@ namespace xt
      * @param l the layout_type of the xfixed_container (unused!)
      */
     template <class ET, class S, layout_type L, class Tag>
-    inline xfixed_container<ET, S, L, Tag>::xfixed_container(const inner_shape_type& /*shape*/, layout_type /*l*/)
+    inline xfixed_container<ET, S, L, Tag>::xfixed_container(const inner_shape_type& shape, layout_type l)
     {
+        (void)(shape);
+        (void)(l);
+        XTENSOR_ASSERT(shape.size() == N && std::equal(shape.begin(), shape.end(), m_shape.begin()));
+        XTENSOR_ASSERT(L == l);
     }
 
     /**
@@ -563,9 +549,21 @@ namespace xt
      * @param l the layout_type of the xfixed_container (unused!)
      */
     template <class ET, class S, layout_type L, class Tag>
-    inline xfixed_container<ET, S, L, Tag>::xfixed_container(const inner_shape_type& /*shape*/, value_type v, layout_type /*l*/)
-        : xfixed_container(v)
+    inline xfixed_container<ET, S, L, Tag>::xfixed_container(const inner_shape_type& shape, value_type v, layout_type l)
     {
+        (void)(shape);
+        (void)(l);
+        XTENSOR_ASSERT(shape.size() == N && std::equal(shape.begin(), shape.end(), m_shape.begin()));
+        XTENSOR_ASSERT(L == l);
+        std::fill(this->storage().begin(), this->storage().end(), v);
+    }
+
+    template <class ET, class S, layout_type L, class Tag>
+    template <class ST>
+    inline xfixed_container<ET, S, L, Tag> xfixed_container<ET, S, L, Tag>::from_shape(ST&& shape)
+    {
+        XTENSOR_ASSERT(shape.size() == N && std::equal(shape.begin(), shape.end(), m_shape.begin()));
+        return self_type();
     }
 
     /**
@@ -626,6 +624,33 @@ namespace xt
     {
         (void)(shape);  // remove unused parameter warning if XTENSOR_ASSERT undefined
         XTENSOR_ASSERT(std::equal(shape.begin(), shape.end(), m_shape.begin()) && shape.size() == m_shape.size());
+    }
+
+    /**
+     * Note that the xfixed_container **cannot** be resized. Attempting to resize with a different
+     * size throws an assert in debug mode.
+     */
+    template <class ET, class S, layout_type L, class Tag>
+    template <class ST>
+    inline void xfixed_container<ET, S, L, Tag>::resize(ST&& shape, layout_type l) const
+    {
+        (void)(shape);  // remove unused parameter warning if XTENSOR_ASSERT undefined
+        (void)(l);
+        XTENSOR_ASSERT(std::equal(shape.begin(), shape.end(), m_shape.begin()) && shape.size() == m_shape.size() && L == l);
+    }
+
+    /**
+     * Note that the xfixed_container **cannot** be resized. Attempting to resize with a different
+     * size throws an assert in debug mode.
+     */
+    template <class ET, class S, layout_type L, class Tag>
+    template <class ST>
+    inline void xfixed_container<ET, S, L, Tag>::resize(ST&& shape, const strides_type& strides) const
+    {
+        (void)(shape);  // remove unused parameter warning if XTENSOR_ASSERT undefined
+        (void)(strides);
+        XTENSOR_ASSERT(std::equal(shape.begin(), shape.end(), m_shape.begin()) && shape.size() == m_shape.size());
+        XTENSOR_ASSERT(std::equal(strides.begin(), strides.end(), m_strides.begin()) && strides.size() == m_strides.size());
     }
 
     /**
