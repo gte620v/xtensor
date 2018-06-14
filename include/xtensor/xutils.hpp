@@ -69,7 +69,7 @@ namespace xt
     bool resize_container(std::array<T, N>& a, typename std::array<T, N>::size_type size);
 
     template <std::size_t... I>
-    struct fixed_shape;
+    class fixed_shape;
 
     template <std::size_t... I>
     bool resize_container(fixed_shape<I...>& a, std::size_t size);

@@ -31,27 +31,6 @@
     #define XTENSOR_HAS_CONSTEXPR_ENHANCED
 #endif
 
-namespace xt
-{
-
-}
-
-
-namespace std
-{
-    template <class T, size_t N>
-    class tuple_size<xt::const_array<T, N>> :
-        public integral_constant<size_t, N>
-    {
-    };
-
-    template <size_t... N>
-    class tuple_size<xt::fixed_shape<N...>> :
-        public integral_constant<size_t, sizeof...(N)>
-    {
-    };
-}
-
 namespace xtl
 {
     namespace detail

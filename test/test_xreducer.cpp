@@ -365,6 +365,37 @@ namespace xt
         a_lz = sum(a, {1, 2});
         a_gd_2 = sum(a, {1, 2}, evaluation_strategy::immediate());
         EXPECT_EQ(a_lz, a_gd_2);
+
+        auto a_lz_3 = sum(a, xshape<1, 2>());
+        auto a_gd_3 = sum(a, xshape<1, 2>(), evaluation_strategy::immediate());
+        EXPECT_EQ(a_lz_3, a_gd_2);
+        EXPECT_EQ(a_gd_3, a_gd_2);
+        bool truth = std::is_same<decltype(a_gd_3), xtensor_fixed<double, xshape<3>>>::value;
+        EXPECT_TRUE(truth);
+
+        xtensor<char, 3> ct = xt::random::randint<char>({1, 5, 3});
+        xtensor_fixed<char, xshape<1, 5, 3>> c = xt::random::randint<char>({1, 5, 3});
+        auto b_fx_1 = sum(c, xshape<0, 2>(), evaluation_strategy::immediate());
+        auto b_fx_2 = sum(c, xshape<0, 1>(), evaluation_strategy::immediate());
+        auto b_fx_3 = sum(c, xshape<0, 1, 2>(), evaluation_strategy::immediate());
+
+        EXPECT_EQ(b_fx_1, sum(c, {0, 2}));
+        EXPECT_EQ(b_fx_2, sum(c, {0, 1}));
+        EXPECT_EQ(b_fx_3, sum(c, {0, 1, 2}));
+
+        truth = std::is_same<std::decay_t<decltype(b_fx_1)>, xtensor_fixed<long long, xshape<5>>>::value;
+        EXPECT_TRUE(truth);
+        truth = std::is_same<std::decay_t<decltype(b_fx_3)>, xtensor_fixed<long long, xshape<>>>::value;
+        EXPECT_TRUE(truth);
+
+        truth = std::is_same<xshape<1, 3>, typename fixed_xreducer_shape_type<xshape<1, 5, 3>, xshape<1>>::type>();
+        EXPECT_TRUE(truth);
+        truth = std::is_same<xshape<5>, typename fixed_xreducer_shape_type<xshape<1, 5, 3>, xshape<0, 2>>::type>();
+        EXPECT_TRUE(truth);
+        truth = std::is_same<xshape<>, typename fixed_xreducer_shape_type<xshape<1, 5, 3>, xshape<0, 1, 2>>::type>();
+        EXPECT_TRUE(truth);
+        truth = std::is_same<xshape<1, 5>, typename fixed_xreducer_shape_type<xshape<1, 5>, xshape<2>>::type>();
+        EXPECT_TRUE(truth);
     }
 
     TEST(xreducer, view_steppers)

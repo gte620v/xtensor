@@ -147,6 +147,44 @@ namespace xt
         EXPECT_EQ(b(), 432 + 4);
         EXPECT_EQ(c, a);
     }
+
+    TEST(xtensor_fixed, xfunction_eval)
+    {
+        xtensorf3x4 a({{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}});
+        xtensorf4 b({4, 5, 6, 7});
+
+        auto f1 = a + b;
+        bool truth = std::is_same<typename decltype(f1)::shape_type, xshape<3, 4>>::value;
+        EXPECT_TRUE(truth);
+        auto f2 = a + b + 5.0;
+        auto f3 = 5 + a + b;
+        auto f4 = a / 5 + b;
+
+        truth = std::is_same<typename decltype(f2)::shape_type, xshape<3, 4>>::value;
+        EXPECT_TRUE(truth);
+        truth = std::is_same<typename decltype(f3)::shape_type, xshape<3, 4>>::value;
+        EXPECT_TRUE(truth);
+        truth = std::is_same<typename decltype(f4)::shape_type, xshape<3, 4>>::value;
+        EXPECT_TRUE(truth);
+
+        auto e1 = xt::eval(f1);
+        auto e2 = xt::eval(f3);
+        truth = std::is_same<decltype(e1), xtensor_fixed<double, xshape<3, 4>>>::value;
+        EXPECT_TRUE(truth);
+        truth = std::is_same<decltype(e2), xtensor_fixed<double, xshape<3, 4>>>::value;
+        EXPECT_TRUE(truth);
+
+        xtensor_fixed<char, xshape<   2, 1, 10, 5>> xa;
+        xtensor_fixed<char, xshape<   2, 1, 10, 5>> xc;
+        xtensor_fixed<char, xshape<3, 2, 4, 10, 1>> xb;
+
+        auto fx1 = xa * xb;
+        auto fx2 = 5 + xb * xa;
+        truth = std::is_same<typename decltype(fx1)::shape_type, xshape<3, 2, 4, 10, 5>>::value;
+        EXPECT_TRUE(truth);
+        truth = std::is_same<typename decltype(fx2)::shape_type, xshape<3, 2, 4, 10, 5>>::value;
+        EXPECT_TRUE(truth);
+    }
 }
 
 #endif

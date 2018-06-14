@@ -1417,6 +1417,26 @@ namespace xt
 
 }
 
+/******************************
+ * std::tuple_size extensions *
+ ******************************/
+
+namespace std
+{
+    template <class T, size_t N>
+    class tuple_size<xt::const_array<T, N>> :
+        public integral_constant<size_t, N>
+    {
+    };
+
+    template <size_t... N>
+    class tuple_size<xt::fixed_shape<N...>> :
+        public integral_constant<size_t, sizeof...(N)>
+    {
+    };
+}
+
+
 #undef XTENSOR_CONST
 #undef XTENSOR_ALIGNMENT
 #undef XTENSOR_SELECT_ALIGN
