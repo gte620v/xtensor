@@ -88,7 +88,7 @@ namespace xt
         EXPECT_EQ(arm.strides().size(), brm.strides().size());
         EXPECT_TRUE(std::equal(arm.backstrides().begin(), arm.backstrides().end(), brm.backstrides().begin()));
         EXPECT_EQ(arm.backstrides().size(), brm.backstrides().size());
-        EXPECT_EQ(arm.size(), 3 * 7 * 2 * 5 * 3);
+        EXPECT_EQ(arm.size(), std::size_t(3 * 7 * 2 * 5 * 3));
 
         xtensor_fixed<double, xshape<3, 7, 2, 5, 3>, layout_type::column_major> acm;
         xtensor<double, 5, layout_type::column_major> bcm = xtensor<double, 5, layout_type::column_major>::from_shape({3, 7, 2, 5, 3});
@@ -97,17 +97,34 @@ namespace xt
         EXPECT_EQ(acm.strides().size(), bcm.strides().size());
         EXPECT_TRUE(std::equal(acm.backstrides().begin(), acm.backstrides().end(), bcm.backstrides().begin()));
         EXPECT_EQ(acm.backstrides().size(), bcm.backstrides().size());
-        EXPECT_EQ(acm.size(), 3 * 7 * 2 * 5 * 3);
+        EXPECT_EQ(acm.size(), std::size_t(3 * 7 * 2 * 5 * 3));
 
         auto s = get_strides<layout_type::row_major>(xshape<3, 4, 5>());
-        EXPECT_EQ(s[0], 20);
-        EXPECT_EQ(s[1], 5);
-        EXPECT_EQ(s[2], 1);
+        EXPECT_EQ(s[0], 20u);
+        EXPECT_EQ(s[1], 5u);
+        EXPECT_EQ(s[2], 1u);
 
         auto sc = get_strides<layout_type::column_major>(xshape<3, 4, 5>());
-        EXPECT_EQ(sc[0], 1);
-        EXPECT_EQ(sc[1], 3);
-        EXPECT_EQ(sc[2], 12);
+        EXPECT_EQ(sc[0], 1u);
+        EXPECT_EQ(sc[1], 3u);
+        EXPECT_EQ(sc[2], 12u);
+
+        std::array<std::size_t, 3> ts1({1, 5, 3}), tt1;
+
+        auto sc2 = get_strides<layout_type::column_major>(xshape<1, 5, 3>());
+        compute_strides(ts1, layout_type::column_major, tt1);
+        EXPECT_EQ(tt1[0], sc2[0]);
+        EXPECT_EQ(tt1[1], sc2[1]);
+        EXPECT_EQ(tt1[2], sc2[2]);
+
+        auto sc3c = get_strides<layout_type::column_major>(xshape<3, 1, 3, 2, 1, 3>());
+        auto sc3r = get_strides<layout_type::row_major>(xshape<3, 1, 3, 2, 1, 3>());
+        std::vector<std::size_t> ts2({3, 1, 3, 2, 1, 3}), tt2(6);
+
+        compute_strides(ts2, layout_type::column_major, tt2);
+        EXPECT_TRUE(std::equal(tt2.begin(), tt2.end(), sc3c.begin()) && ts2.size() == sc3c.size());
+        compute_strides(ts2, layout_type::row_major, tt2);
+        EXPECT_TRUE(std::equal(tt2.begin(), tt2.end(), sc3r.begin()) && ts2.size() == sc3r.size());
     }
 
     TEST(xtensor_fixed, adapt)

@@ -106,14 +106,7 @@ namespace xt
         template <std::size_t I, std::size_t Y, std::size_t... X>
         struct calculate_stride<layout_type::column_major, I, Y, X...>
         {
-            constexpr static std::size_t value = Y *
-                (calculate_stride<layout_type::column_major, I - 1, X...>::value == 0 ? 1 : calculate_stride<layout_type::column_major, I - 1, X...>::value);
-        };
-
-        template <std::size_t I, std::size_t... X>
-        struct calculate_stride<layout_type::column_major, I, 1, X...>
-        {
-            constexpr static std::size_t value = 0;
+            constexpr static std::size_t value = Y * calculate_stride<layout_type::column_major, I - 1, X...>::value;
         };
 
         template <std::size_t Y, std::size_t... X>
@@ -125,9 +118,7 @@ namespace xt
         template <std::size_t I, std::size_t... X>
         struct calculate_stride_row_major
         {
-            constexpr static std::size_t value = (at<sizeof...(X) - I, X...>::value == 1 ? 0 : at<sizeof...(X) - I, X...>::value) *
-                (calculate_stride_row_major<I - 1, X...>::value == 0 ? 
-                    1 : calculate_stride_row_major<I - 1, X...>::value);
+            constexpr static std::size_t value = at<sizeof...(X) - I, X...>::value * calculate_stride_row_major<I - 1, X...>::value;
         };
 
         template <std::size_t... X>
@@ -144,11 +135,11 @@ namespace xt
 
         template <layout_type L, std::size_t... X, std::size_t... I>
         constexpr const_array<std::size_t, sizeof...(X)>
-        get_strides_impl(const xt::fixed_shape<X...>& /*shape*/, std::index_sequence<I...>)
+        get_strides_impl(const xt::fixed_shape<X...>& shape, std::index_sequence<I...>)
         {
             static_assert((L == layout_type::row_major) || (L == layout_type::column_major),
                           "Layout not supported for fixed array");
-            return {calculate_stride<L, I, X...>::value...};
+            return const_array<std::size_t, sizeof...(X)>({shape[I] == 1 ? 0 : calculate_stride<L, I, X...>::value...});
         }
 
         template <class T, std::size_t... I>
@@ -247,7 +238,14 @@ namespace xt
         using shape_type = S;
         using strides_type = std::array<typename inner_shape_type::value_type,
                                       std::tuple_size<inner_shape_type>::value>;
+        // fix for MSVC 32bit
+    #if !(defined(_MSC_VER) && _MSC_VER < 1910 && !defined(_WIN64))
         using storage_type = aligned_array<ET, detail::fixed_compute_size<S>::value>;
+    #else
+        using storage_type = std::conditional_t<S::size() == 0,
+            std::array<ET, 0>,
+            aligned_array<ET, detail::fixed_compute_size<S>::value>>;
+    #endif
         using temporary_type = xfixed_container<ET, S, L, Tag>;
         static constexpr layout_type layout = L;
     };

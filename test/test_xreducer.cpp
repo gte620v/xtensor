@@ -270,6 +270,14 @@ namespace xt
         a_lz = sum(a, {1, 2, 3});
         a_gd = sum(a, {1, 2, 3}, evaluation_strategy::immediate());
         EXPECT_EQ(a_lz, a_gd);
+
+        xtensor<short, 3, layout_type::column_major> ct = xt::random::randint<short>({1, 5, 3});
+        EXPECT_EQ(sum(ct, {0, 2}), sum(ct, {0, 2}, evaluation_strategy::immediate()));
+
+        xtensor<short, 5, layout_type::column_major> ct2 = xt::random::randint<short>({1, 5, 1, 2, 3});
+        EXPECT_EQ(sum(ct2, {0, 1, 2}), sum(ct2, {0, 1, 2}, evaluation_strategy::immediate()));
+        EXPECT_EQ(sum(ct2, {2, 3}), sum(ct2, {2, 3}, evaluation_strategy::immediate()));
+        EXPECT_EQ(sum(ct2, {1, 3}), sum(ct2, {1, 3}, evaluation_strategy::immediate()));
     }
 
     TEST(xreducer, chaining_reducers)
@@ -374,11 +382,12 @@ namespace xt
         EXPECT_TRUE(truth);
 
         xtensor<short, 3> ct = xt::random::randint<short>({1, 5, 3});
-        xtensor_fixed<short, xshape<1, 5, 3>> c = xt::random::randint<short>({1, 5, 3});
+        xtensor_fixed<short, xshape<1, 5, 3>> c = ct;
         auto b_fx_1 = sum(c, xshape<0, 2>(), evaluation_strategy::immediate());
         auto b_fx_2 = sum(c, xshape<0, 1>(), evaluation_strategy::immediate());
         auto b_fx_3 = sum(c, xshape<0, 1, 2>(), evaluation_strategy::immediate());
 
+        EXPECT_EQ(sum(ct, {0, 2}, evaluation_strategy::immediate()), sum(c, {0, 2}));
         EXPECT_EQ(b_fx_1, sum(c, {0, 2}));
         EXPECT_EQ(b_fx_2, sum(c, {0, 1}));
         EXPECT_EQ(b_fx_3, sum(c, {0, 1, 2}));
