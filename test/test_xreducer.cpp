@@ -373,8 +373,8 @@ namespace xt
         bool truth = std::is_same<decltype(a_gd_3), xtensor_fixed<double, xshape<3>>>::value;
         EXPECT_TRUE(truth);
 
-        xtensor<char, 3> ct = xt::random::randint<char>({1, 5, 3});
-        xtensor_fixed<char, xshape<1, 5, 3>> c = xt::random::randint<char>({1, 5, 3});
+        xtensor<short, 3> ct = xt::random::randint<short>({1, 5, 3});
+        xtensor_fixed<short, xshape<1, 5, 3>> c = xt::random::randint<short>({1, 5, 3});
         auto b_fx_1 = sum(c, xshape<0, 2>(), evaluation_strategy::immediate());
         auto b_fx_2 = sum(c, xshape<0, 1>(), evaluation_strategy::immediate());
         auto b_fx_3 = sum(c, xshape<0, 1, 2>(), evaluation_strategy::immediate());
