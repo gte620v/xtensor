@@ -238,14 +238,7 @@ namespace xt
         using shape_type = S;
         using strides_type = std::array<typename inner_shape_type::value_type,
                                       std::tuple_size<inner_shape_type>::value>;
-        // fix for MSVC 32bit
-    #if !(defined(_MSC_VER) && _MSC_VER < 1910 && !defined(_WIN64))
         using storage_type = aligned_array<ET, detail::fixed_compute_size<S>::value>;
-    #else
-        using storage_type = std::conditional_t<S::size() == 0,
-            std::array<ET, 0>,
-            aligned_array<ET, detail::fixed_compute_size<S>::value>>;
-    #endif
         using temporary_type = xfixed_container<ET, S, L, Tag>;
         static constexpr layout_type layout = L;
     };
