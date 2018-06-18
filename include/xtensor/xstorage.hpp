@@ -1225,6 +1225,13 @@ namespace xt
         lhs.swap(rhs);
     }
 
+    template <class X, class T, std::size_t N, class A>
+    struct rebind_container<X, svector<T, N, A>>
+    {
+        using allocator = typename A::template rebind<X>::other;
+        using type = svector<X, N, allocator>;
+    };
+
 #define XTENSOR_SELECT_ALIGN (XTENSOR_ALIGNMENT != 0 ? XTENSOR_ALIGNMENT : alignof(T))
 
     /**

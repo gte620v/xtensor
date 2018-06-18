@@ -39,8 +39,8 @@ namespace xt
     struct xiterable_inner_types<xstrided_view<CT, S, L, FST>>
     {
         using inner_shape_type = S;
-        using inner_strides_type = inner_shape_type;
-        using inner_backstrides_type_type = inner_shape_type;
+        using inner_strides_type = get_strides_t<inner_shape_type>;
+        using inner_backstrides_type_type = inner_strides_type;
 
         using const_stepper = std::conditional_t<
             is_indexed_stepper<typename std::decay_t<CT>::stepper>::value,
@@ -113,10 +113,10 @@ namespace xt
         using simd_value_type = xsimd::simd_type<value_type>;
 
         template <class CTA>
-        xstrided_view(CTA&& e, S&& shape, S&& strides, std::size_t offset, layout_type layout) noexcept;
+        xstrided_view(CTA&& e, S&& shape, strides_type&& strides, std::size_t offset, layout_type layout) noexcept;
 
         template <class CTA, class FLS>
-        xstrided_view(CTA&& e, S&& shape, S&& strides, std::size_t offset, layout_type layout, FLS&& flatten_strides, layout_type flatten_layout) noexcept;
+        xstrided_view(CTA&& e, S&& shape, strides_type&& strides, std::size_t offset, layout_type layout, FLS&& flatten_strides, layout_type flatten_layout) noexcept;
 
         template <class E>
         self_type& operator=(const xexpression<E>& e);
@@ -224,8 +224,8 @@ namespace xt
      */
     using xstrided_slice_vector = std::vector<xstrided_slice<std::ptrdiff_t>>;
 
-    template <class E, class I>
-    auto strided_view(E&& e, I&& shape, I&& strides, std::size_t offset = 0, layout_type layout = layout_type::dynamic) noexcept;
+    template <class E, class S, class X>
+    auto strided_view(E&& e, S&& shape, X&& strides, std::size_t offset = 0, layout_type layout = layout_type::dynamic) noexcept;
 
     template <class E>
     auto strided_view(E&& e, const xstrided_slice_vector& slices);
@@ -270,14 +270,14 @@ namespace xt
      */
     template <class CT, class S, layout_type L, class FST>
     template <class CTA>
-    inline xstrided_view<CT, S, L, FST>::xstrided_view(CTA&& e, S&& shape, S&& strides, std::size_t offset, layout_type layout) noexcept
+    inline xstrided_view<CT, S, L, FST>::xstrided_view(CTA&& e, S&& shape, strides_type&& strides, std::size_t offset, layout_type layout) noexcept
         : base_type(std::forward<CTA>(e), std::move(shape), std::move(strides), offset, layout)
     {
     }
 
     template <class CT, class S, layout_type L, class FST>
     template <class CTA, class FLS>
-    inline xstrided_view<CT, S, L, FST>::xstrided_view(CTA&& e, S&& shape, S&& strides, std::size_t offset,
+    inline xstrided_view<CT, S, L, FST>::xstrided_view(CTA&& e, S&& shape, strides_type&& strides, std::size_t offset,
                                                        layout_type layout, FLS&& flatten_strides, layout_type flatten_layout) noexcept
         : base_type(std::forward<CTA>(e), std::move(shape), std::move(strides), offset, layout, std::forward<FLS>(flatten_strides), flatten_layout)
     {
@@ -451,15 +451,16 @@ namespace xt
      * @param layout the new layout of the expression
      *
      * @tparam E type of xexpression
-     * @tparam I shape and strides type
+     * @tparam S strides type
+     * @tparam X strides type
      *
      * @return the view
      */
-    template <class E, class I>
-    inline auto strided_view(E&& e, I&& shape, I&& strides, std::size_t offset, layout_type layout) noexcept
+    template <class E, class S, class X>
+    inline auto strided_view(E&& e, S&& shape, X&& strides, std::size_t offset, layout_type layout) noexcept
     {
-        using view_type = xstrided_view<xclosure_t<E>, I>;
-        return view_type(std::forward<E>(e), std::forward<I>(shape), std::forward<I>(strides), offset, layout);
+        using view_type = xstrided_view<xclosure_t<E>, S>;
+        return view_type(std::forward<E>(e), std::forward<S>(shape), std::forward<X>(strides), offset, layout);
     }
 
     namespace detail
@@ -711,7 +712,7 @@ namespace xt
             }
 
             // permute stride and shape
-            using strides_type = typename std::decay_t<E>::strides_type;
+            using strides_type = get_strides_t<typename std::decay_t<E>::strides_type>;
             strides_type temp_strides;
             resize_container(temp_strides, e.strides().size());
 
@@ -763,14 +764,14 @@ namespace xt
             return transpose_impl(std::forward<E>(e), std::forward<S>(permutation), check_policy::none());
         }
 
-        template <class E, class S, std::enable_if_t<has_data_interface<std::decay_t<E>>::value>* = nullptr>
-        inline void compute_transposed_strides(E&& e, const S&, S& strides)
+        template <class E, class S, class X, std::enable_if_t<has_data_interface<std::decay_t<E>>::value>* = nullptr>
+        inline void compute_transposed_strides(E&& e, const S&, X& strides)
         {
             std::copy(e.strides().crbegin(), e.strides().crend(), strides.begin());
         }
 
-        template <class E, class S, std::enable_if_t<!has_data_interface<std::decay_t<E>>::value>* = nullptr>
-        inline void compute_transposed_strides(E&&, const S& shape, S& strides)
+        template <class E, class S, class X, std::enable_if_t<!has_data_interface<std::decay_t<E>>::value>* = nullptr>
+        inline void compute_transposed_strides(E&&, const S& shape, X& strides)
         {
             layout_type l = transpose_layout(std::decay_t<E>::static_layout);
             compute_strides(shape, l, strides);
@@ -789,7 +790,7 @@ namespace xt
         resize_container(shape, e.shape().size());
         std::copy(e.shape().crbegin(), e.shape().crend(), shape.begin());
 
-        shape_type strides;
+        get_strides_t<shape_type> strides;
         resize_container(strides, e.shape().size());
         detail::compute_transposed_strides(e, shape, strides);
 
@@ -841,7 +842,8 @@ namespace xt
             using shape_type = static_shape<std::size_t, 1>;
             using view_type = xstrided_view<xclosure_t<E>, shape_type>;
 
-            shape_type new_shape, new_strides;
+            shape_type new_shape;
+            get_strides_t<shape_type> new_strides;
             new_shape[0] = e.size();
             new_strides[0] = std::size_t(1);
             std::size_t offset = detail::get_offset(e);
@@ -859,7 +861,8 @@ namespace xt
             using shape_type = static_shape<std::size_t, 1>;
             using view_type = xstrided_view<xclosure_t<E>, shape_type, layout_type::dynamic, detail::flat_expression_adaptor<xclosure_t<E>>>;
 
-            shape_type new_shape, new_strides;
+            shape_type new_shape;
+            get_strides_t<shape_type> new_strides;
             new_shape[0] = e.size();
             new_strides[0] = std::size_t(1);
             std::size_t offset = detail::get_offset(e);
@@ -891,7 +894,7 @@ namespace xt
             {
                 // Case where the static layout is either row_major or column major.
                 using shape_type = typename std::decay_t<E>::shape_type;
-                shape_type strides;
+                get_strides_t<shape_type> strides;
                 resize_container(strides, e.shape().size());
                 layout_type l = detail::transpose_layout(e.layout());
                 compute_strides(e.shape(), l, strides);
@@ -966,12 +969,13 @@ namespace xt
     template <class E>
     inline auto squeeze(E&& e)
     {
-        xt::dynamic_shape<std::size_t> new_shape, new_strides;
+        xt::dynamic_shape<std::size_t> new_shape;
+        xt::dynamic_shape<std::ptrdiff_t> new_strides;
         std::copy_if(e.shape().cbegin(), e.shape().cend(), std::back_inserter(new_shape),
                      [](std::size_t i) { return i != 1; });
-        auto&& old_strides = detail::get_strides(e);
+        decltype(auto) old_strides = detail::get_strides(e);
         std::copy_if(old_strides.cbegin(), old_strides.cend(), std::back_inserter(new_strides),
-                     [](std::size_t i) { return i != 0; });
+                     [](std::ptrdiff_t i) { return i != 0; });
 
         using view_type = xstrided_view<xclosure_t<E>, xt::dynamic_shape<std::size_t>>;
         return view_type(std::forward<E>(e), std::move(new_shape), std::move(new_strides), 0, e.layout());
@@ -983,7 +987,8 @@ namespace xt
         inline auto squeeze_impl(E&& e, S&& axis, check_policy::none)
         {
             std::size_t new_dim = e.dimension() - axis.size();
-            xt::dynamic_shape<std::size_t> new_shape(new_dim), new_strides(new_dim);
+            xt::dynamic_shape<std::size_t> new_shape(new_dim);
+            xt::dynamic_shape<std::ptrdiff_t> new_strides(new_dim);
 
             decltype(auto) old_strides = detail::get_strides(e);
 
@@ -1177,30 +1182,6 @@ namespace xt
         return result;
     }
 
-    template <class T>
-    struct make_signed_shape;
-
-    template <class E, std::size_t N>
-    struct make_signed_shape<std::array<E, N>>
-    {
-        using type = std::array<typename std::make_signed<E>::type, N>;
-    };
-
-    template <class E>
-    struct make_signed_shape<std::vector<E>>
-    {
-        using type = std::vector<typename std::make_signed<E>::type>;
-    };
-
-    template <class E>
-    struct make_signed_shape<xt::svector<E>>
-    {
-        using type = xt::svector<typename std::make_signed<E>::type>;
-    };
-
-    template <class T>
-    using make_signed_shape_t = typename make_signed_shape<T>::type;
-
     /**
      * @brief Reverse the order of elements in an xexpression along the given axis.
      * Note: A NumPy/Matlab style `flipud(arr)` is equivalent to `xt::flip(arr, 0)`,
@@ -1215,14 +1196,13 @@ namespace xt
     inline auto flip(E&& e, std::size_t axis)
     {
         using shape_type = typename std::decay_t<E>::shape_type;
-        using signed_shape_type = make_signed_shape_t<shape_type>;
 
-        signed_shape_type shape;
+        shape_type shape;
         resize_container(shape, e.shape().size());
         std::copy(e.shape().cbegin(), e.shape().cend(), shape.begin());
 
-        signed_shape_type strides;
-        auto&& old_strides = detail::get_strides(e);
+        get_strides_t<shape_type> strides;
+        decltype(auto) old_strides = detail::get_strides(e);
         resize_container(strides, old_strides.size());
         std::copy(old_strides.cbegin(), old_strides.cend(), strides.begin());
 

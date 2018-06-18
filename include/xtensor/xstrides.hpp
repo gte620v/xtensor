@@ -64,7 +64,7 @@ namespace xt
     S unravel_from_strides(typename S::value_type index, const S& strides, layout_type l);
 
     template <class S>
-    S unravel_index(typename S::value_type index, const S& shape, layout_type l);
+    get_strides_t<S> unravel_index(typename S::value_type index, const S& shape, layout_type l);
 
     /***********************
      * broadcast functions *
@@ -181,7 +181,7 @@ namespace xt
             {
                 strides[i] = 0;
             }
-            (*backstrides)[i] = strides[i] * (shape[i] - 1);
+            (*backstrides)[i] = strides[i] * std::ptrdiff_t(shape[i] - 1);
         }
 
         template <class shape_type, class strides_type>
@@ -204,7 +204,7 @@ namespace xt
                 for (std::size_t i = strides.size(); i != 0; --i)
                 {
                     strides[i - 1] = data_size;
-                    data_size = strides[i - 1] * shape[i - 1];
+                    data_size = static_cast<std::size_t>(strides[i - 1]) * shape[i - 1];
                     adapt_strides(shape, strides, bs, i - 1);
                 }
             }
@@ -213,7 +213,7 @@ namespace xt
                 for (std::size_t i = 0; i < strides.size(); ++i)
                 {
                     strides[i] = data_size;
-                    data_size = strides[i] * shape[i];
+                    data_size = static_cast<std::size_t>(strides[i]) * shape[i];
                     adapt_strides(shape, strides, bs, i);
                 }
             }
@@ -332,9 +332,9 @@ namespace xt
     }
 
     template <class S>
-    inline S unravel_index(typename S::value_type index, const S& shape, layout_type l)
+    inline get_strides_t<S> unravel_index(typename S::value_type index, const S& shape, layout_type l)
     {
-        S strides = xtl::make_sequence<S>(shape.size(), 0);
+        get_strides_t<S> strides = xtl::make_sequence<get_strides_t<S>>(shape.size(), 0);
         compute_strides(shape, l, strides);
         return unravel_from_strides(index, strides, l);
     }

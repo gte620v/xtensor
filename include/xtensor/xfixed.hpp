@@ -145,20 +145,20 @@ namespace xt
         template <std::size_t I, std::size_t Y, std::size_t... X>
         struct calculate_stride<layout_type::column_major, I, Y, X...>
         {
-            constexpr static std::size_t value = Y *
+            constexpr static std::ptrdiff_t value = Y *
                 (calculate_stride<layout_type::column_major, I - 1, X...>::value == 0 ? 1 : calculate_stride<layout_type::column_major, I - 1, X...>::value);
         };
 
         template <std::size_t I, std::size_t... X>
         struct calculate_stride<layout_type::column_major, I, 1, X...>
         {
-            constexpr static std::size_t value = 0;
+            constexpr static std::ptrdiff_t value = 0;
         };
 
         template <std::size_t Y, std::size_t... X>
         struct calculate_stride<layout_type::column_major, 0, Y, X...>
         {
-            constexpr static std::size_t value = 1;
+            constexpr static std::ptrdiff_t value = 1;
         };
 
         template <std::size_t IDX, std::size_t... X>
@@ -171,7 +171,7 @@ namespace xt
         template <std::size_t I, std::size_t... X>
         struct calculate_stride_row_major
         {
-            constexpr static std::size_t value = (at<sizeof...(X) - I, X...>::value == 1 ? 0 : at<sizeof...(X) - I, X...>::value) *
+            constexpr static std::ptrdiff_t value = (at<sizeof...(X) - I, X...>::value == 1 ? 0 : at<sizeof...(X) - I, X...>::value) *
                 (calculate_stride_row_major<I - 1, X...>::value == 0 ? 
                     1 : calculate_stride_row_major<I - 1, X...>::value);
         };
@@ -179,17 +179,17 @@ namespace xt
         template <std::size_t... X>
         struct calculate_stride_row_major<0, X...>
         {
-            constexpr static std::size_t value = 1;
+            constexpr static std::ptrdiff_t value = 1;
         };
 
         template <std::size_t I, std::size_t... X>
         struct calculate_stride<layout_type::row_major, I, X...>
         {
-            constexpr static std::size_t value = calculate_stride_row_major<sizeof...(X) - I - 1, X...>::value;
+            constexpr static std::ptrdiff_t value = calculate_stride_row_major<sizeof...(X) - I - 1, X...>::value;
         };
 
         template <layout_type L, std::size_t... X, std::size_t... I>
-        constexpr const_array<std::size_t, sizeof...(X)>
+        constexpr const_array<std::ptrdiff_t, sizeof...(X)>
         get_strides_impl(const xt::fixed_shape<X...>& /*shape*/, std::index_sequence<I...>)
         {
             static_assert((L == layout_type::row_major) || (L == layout_type::column_major),
@@ -197,10 +197,10 @@ namespace xt
             return {calculate_stride<L, I, X...>::value...};
         }
 
-        template <class T, std::size_t... I>
-        constexpr T get_backstrides_impl(const T& shape, const T& strides, std::index_sequence<I...>)
+        template <class S, class T, std::size_t... I>
+        constexpr T get_backstrides_impl(const S& shape, const T& strides, std::index_sequence<I...>)
         {
-            return T({(strides[I] * (shape[I] - 1))...});
+            return T({(strides[I] * std::ptrdiff_t(shape[I] - 1))...});
         }
 
         template <std::size_t... X>
@@ -246,13 +246,13 @@ namespace xt
     }
 
     template <layout_type L, std::size_t... X>
-    constexpr const_array<std::size_t, sizeof...(X)> get_strides(const fixed_shape<X...>& shape) noexcept
+    constexpr const_array<std::ptrdiff_t, sizeof...(X)> get_strides(const fixed_shape<X...>& shape) noexcept
     {
         return detail::get_strides_impl<L>(shape, std::make_index_sequence<sizeof...(X)>{});
     }
 
-    template <class T>
-    constexpr T get_backstrides(const T& shape, const T& strides) noexcept
+    template <class S, class T>
+    constexpr T get_backstrides(const S& shape, const T& strides) noexcept
     {
         return detail::get_backstrides_impl(shape, strides,
                                             std::make_index_sequence<std::tuple_size<T>::value>{});
@@ -274,12 +274,12 @@ namespace xt
     struct xcontainer_inner_types<xfixed_container<ET, S, L, Tag>>
     {
         using inner_shape_type = typename S::cast_type;
-        using inner_strides_type = inner_shape_type;
-        using backstrides_type = inner_shape_type;
+        using strides_type = get_strides_t<inner_shape_type>;
+        using backstrides_type = strides_type;
+        using inner_strides_type = strides_type;
         using inner_backstrides_type = backstrides_type;
         using shape_type = std::array<typename inner_shape_type::value_type,
                                       std::tuple_size<inner_shape_type>::value>;
-        using strides_type = shape_type;
         using storage_type = aligned_array<ET, detail::fixed_compute_size<S>::value>;
         using temporary_type = xfixed_container<ET, S, L, Tag>;
         static constexpr layout_type layout = L;
@@ -410,12 +410,12 @@ namespace xt
     {
         using storage_type = std::remove_reference_t<EC>;
         using inner_shape_type = typename S::cast_type;
-        using inner_strides_type = inner_shape_type;
-        using backstrides_type = inner_shape_type;
+        using strides_type = get_strides_t<inner_shape_type>;
+        using backstrides_type = strides_type;
+        using inner_strides_type = strides_type;
         using inner_backstrides_type = backstrides_type;
         using shape_type = std::array<typename inner_shape_type::value_type,
                                       std::tuple_size<inner_shape_type>::value>;
-        using strides_type = shape_type;
         using temporary_type = xfixed_container<typename storage_type::value_type, S, L, Tag>;
         static constexpr layout_type layout = L;
     };
