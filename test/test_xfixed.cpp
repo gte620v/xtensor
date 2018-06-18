@@ -109,7 +109,7 @@ namespace xt
         EXPECT_EQ(sc[1], 3u);
         EXPECT_EQ(sc[2], 12u);
 
-        std::array<std::size_t, 3> ts1({{1, 5, 3}}), tt1;
+        std::array<std::size_t, 3> ts1 = {1, 5, 3}, tt1;
 
         auto sc2 = get_strides<layout_type::column_major>(xshape<1, 5, 3>());
         compute_strides(ts1, layout_type::column_major, tt1);
