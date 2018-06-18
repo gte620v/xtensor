@@ -261,12 +261,12 @@ namespace xt
                                       std::tuple_size<inner_shape_type>::value>;
 
         // NOTE: 0D (S::size() == 0) results in storage for 1 element (scalar)
-    // #if defined(_MSC_VER) && _MSC_VER < 1910 && !defined(_WIN64)
+    #if defined(_MSC_VER) && _MSC_VER < 1910 && !defined(_WIN64)
         // WORKAROUND FOR MSVC 2015 32 bit, fallback to unaligned container for 0D scalar case
-        // using storage_type = typename msvc2015_workaround::get_storage_type<S::size() == 0, ET, S>::type;
-    // #else
+        using storage_type = typename msvc2015_workaround::get_storage_type<S::size() == 0, ET, S>::type;
+    #else
         using storage_type = aligned_array<ET, detail::fixed_compute_size<S>::value>;
-    // #endif
+    #endif
 
         using temporary_type = xfixed_container<ET, S, L, Tag>;
         static constexpr layout_type layout = L;
