@@ -206,7 +206,7 @@ namespace xt
                                    {  0,   4,  10},
                                    {  0,  28,  80},
                                    {  0, 280, 880}};
-        EXPECT_EQ(expected_0, res_0);
+        EXPECT_TRUE(expected_0 == res_0);
         truth = std::is_same<typename decltype(res_0)::shape_type, xshape<4, 3>>::value;
         EXPECT_TRUE(truth);
     }

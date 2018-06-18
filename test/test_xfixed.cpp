@@ -162,7 +162,7 @@ namespace xt
         EXPECT_EQ(a(), 123);
         b += 432;
         EXPECT_EQ(b(), 432 + 4);
-        EXPECT_EQ(c, a);
+        EXPECT_TRUE(c == a);
     }
 
     TEST(xtensor_fixed, xfunction_eval)
