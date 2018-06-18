@@ -228,6 +228,27 @@ namespace xt
     template <class V, class S>
     using get_init_type_t = typename get_init_type<V, S>::type;
 
+    #if defined(_MSC_VER) && _MSC_VER < 1910 && !defined(_WIN64)
+    namespace msvc2015_workaround
+    {
+        // WORKAROUND FOR MSVC 2015 32 bit
+        template <bool E, class ET, class S>
+        struct get_storage_type;
+
+        template <class ET, class S>
+        struct get_storage_type<true, ET, S>
+        {
+            using type = std::array<ET, detail::fixed_compute_size<S>::value>;
+        };
+
+        template <class ET, class S>
+        struct get_storage_type<false, ET, S>
+        {
+            using type = aligned_array<ET, detail::fixed_compute_size<S>::value>;
+        };
+    }
+    #endif
+
     template <class ET, class S, layout_type L, class Tag>
     struct xcontainer_inner_types<xfixed_container<ET, S, L, Tag>>
     {
@@ -238,7 +259,15 @@ namespace xt
         using shape_type = S;
         using strides_type = std::array<typename inner_shape_type::value_type,
                                       std::tuple_size<inner_shape_type>::value>;
+
+        // NOTE: 0D (S::size() == 0) results in storage for 1 element (scalar)
+    #if defined(_MSC_VER) && _MSC_VER < 1910 && !defined(_WIN64)
+        // WORKAROUND FOR MSVC 2015 32 bit, fallback to unaligned container for 0D scalar case
+        using storage_type = typename msvc2015_workaround::get_storage_type<S::size() == 0, ET, S>::type;
+    #else
         using storage_type = aligned_array<ET, detail::fixed_compute_size<S>::value>;
+    #endif
+
         using temporary_type = xfixed_container<ET, S, L, Tag>;
         static constexpr layout_type layout = L;
     };

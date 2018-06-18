@@ -1225,12 +1225,8 @@ namespace xt
         lhs.swap(rhs);
     }
 
-#if defined(_MSC_VER) && (_MSC_VER < 1910) && !defined(_WIN64)
-    // For MSVC 2015 32bit we need to remove alignment when N == 0
-    #define XTENSOR_SELECT_ALIGN (N == 0 ? 0 : XTENSOR_ALIGNMENT != 0 ? XTENSOR_ALIGNMENT : alignof(T))
-#else
     #define XTENSOR_SELECT_ALIGN (XTENSOR_ALIGNMENT != 0 ? XTENSOR_ALIGNMENT : alignof(T))
-#endif
+
     /**
      * This array class is modeled after ``std::array`` but adds optional alignment through a template parameter.
      *
