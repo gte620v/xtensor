@@ -524,7 +524,7 @@ namespace xt
         {
             size_type index = integral_skip<S...>(i);
             m_shape[i] = index < sizeof...(S) ?
-                apply<std::size_t>(index, func, m_slices) : m_e.shape()[index - newaxis_count_before<S...>(index)];
+                apply<size_type>(index, func, m_slices) : m_e.shape()[index - newaxis_count_before<S...>(index)];
         }
     }
     //@}
@@ -904,14 +904,15 @@ namespace xt
         std::enable_if_t<has_data_interface<T>::value && detail::slices_contigous<S...>::value, const std::size_t>
     {
         auto func = [](const auto& s) { return xt::value(s, 0); };
-        typename T::size_type offset = m_e.data_offset();
+        using strides_value_type = std::decay_t<decltype(m_e.strides()[0])>;
+        strides_value_type offset = static_cast<strides_value_type>(m_e.data_offset());
 
         for (size_type i = 0; i < sizeof...(S); ++i)
         {
-            size_type s = apply<size_type>(i, func, m_slices) * m_e.strides()[i];
+            strides_value_type s = static_cast<strides_value_type>(apply<strides_value_type>(i, func, m_slices) * m_e.strides()[i]);
             offset += s;
         }
-        return offset;
+        return static_cast<std::size_t>(offset);
     }
     //@}
 
@@ -983,6 +984,7 @@ namespace xt
     {
         m_strides = xtl::make_sequence<strides_type>(dimension(), 0);
         m_backstrides = xtl::make_sequence<strides_type>(dimension(), 0);
+        using strides_value_type = std::decay_t<decltype(m_strides[0])>;
 
         auto func = [](const auto& s) { return xt::step_size(s, 1); };
 
@@ -990,7 +992,7 @@ namespace xt
         {
             size_type index = integral_skip<S...>(i);
             m_strides[i] = index < sizeof...(S) ?
-                apply<size_type>(index, func, m_slices) * m_e.strides()[index - newaxis_count_before<S...>(index)] :
+                apply<strides_value_type>(index, func, m_slices) * m_e.strides()[index - newaxis_count_before<S...>(index)] :
                 m_e.strides()[index - newaxis_count_before<S...>(index)];
             // adapt strides for shape[i] == 1 to make consistent with rest of xtensor
             detail::adapt_strides(shape(), m_strides, &m_backstrides, i);
@@ -1100,6 +1102,7 @@ namespace xt
     template <class It>
     inline auto xview<CT, S...>::make_index(It first, It last) const -> base_index_type
     {
+        // todo make signed?
         auto index = xtl::make_sequence<typename xexpression_type::shape_type>(m_e.dimension(), 0);
         auto func1 = [&first](const auto& s) {
             return get_slice_value(s, first);

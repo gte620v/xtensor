@@ -136,8 +136,8 @@ namespace xt
         result.resize(result_shape, e.layout());
 
         std::size_t ax_idx = (e.layout() == layout_type::row_major) ? axes.size() - 1 : 0;
-        std::size_t inner_loop_size = e.strides()[axes[ax_idx]];
-        std::size_t inner_stride = e.strides()[axes[ax_idx]];
+        std::size_t inner_loop_size = static_cast<std::size_t>(e.strides()[axes[ax_idx]]);
+        std::size_t inner_stride = static_cast<std::size_t>(e.strides()[axes[ax_idx]]);
         std::size_t outer_loop_size = e.shape()[axes[ax_idx]];
 
         // The following code merges reduction axes "at the end" (or the beginning for col_major)
@@ -162,7 +162,7 @@ namespace xt
             if (std::find(axes.begin(), axes.end(), i) == axes.end())
             {
                 // i not in axes!
-                iter_strides[i] = result.strides()[idx];
+                iter_strides[i] = static_cast<std::size_t>(result.strides()[idx]);
                 ++idx;
             }
         }
