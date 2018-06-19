@@ -19,7 +19,7 @@ namespace xt
             row_major_result<> rm;
             using index_type = xt::dynamic_shape<std::ptrdiff_t>;
             index_type index = { 2, 1, 1 };
-            auto offset = element_offset<std::size_t>(rm.strides(), index.cbegin(), index.cend());
+            auto offset = element_offset<std::ptrdiff_t>(rm.strides(), index.cbegin(), index.cend());
             index_type unrav_index = unravel_from_strides(offset, rm.strides(), layout_type::row_major);
             EXPECT_TRUE(std::equal(unrav_index.cbegin(), unrav_index.cend(), index.cbegin()));
         }
@@ -29,7 +29,7 @@ namespace xt
             column_major_result<> cm;
             using index_type = xt::dynamic_shape<std::ptrdiff_t>;
             index_type index = { 2, 1, 1 };
-            auto offset = element_offset<std::size_t>(cm.strides(), index.cbegin(), index.cend());
+            auto offset = element_offset<std::ptrdiff_t>(cm.strides(), index.cbegin(), index.cend());
             index_type unrav_index = unravel_from_strides(offset, cm.strides(), layout_type::column_major);
             EXPECT_TRUE(std::equal(unrav_index.cbegin(), unrav_index.cend(), index.cbegin()));
         }
@@ -39,7 +39,7 @@ namespace xt
             unit_shape_result<> um;
             using index_type = xt::dynamic_shape<std::ptrdiff_t>;
             index_type index = { 2, 0, 1 };
-            auto offset = element_offset<std::size_t>(um.strides(), index.cbegin(), index.cend());
+            auto offset = element_offset<std::ptrdiff_t>(um.strides(), index.cbegin(), index.cend());
             index_type unrav_index = unravel_from_strides(offset, um.strides(), layout_type::row_major);
             EXPECT_TRUE(std::equal(unrav_index.cbegin(), unrav_index.cend(), index.cbegin()));
         }

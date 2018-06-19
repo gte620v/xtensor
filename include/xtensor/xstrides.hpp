@@ -336,8 +336,9 @@ namespace xt
     inline get_strides_t<S> unravel_index(typename S::value_type index, const S& shape, layout_type l)
     {
         get_strides_t<S> strides = xtl::make_sequence<get_strides_t<S>>(shape.size(), 0);
+        using strides_value_type = std::decay_t<decltype(strides[0])>;
         compute_strides(shape, l, strides);
-        return unravel_from_strides(index, strides, l);
+        return unravel_from_strides(static_cast<strides_value_type>(index), strides, l);
     }
 
     template <class S1, class S2>
