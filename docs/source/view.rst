@@ -237,4 +237,26 @@ The returned value is an expression holding a closure on the passed argument.
 
     real(e) = zeros<double>({2, 2});
     // => e = {{0.0, 0.0 + 1.0i}, {0.0 - 1.0i, 0.0}};
+    
+Slicing a view
+--------------
+
+In order to slice with a variable indices array, the slicing array must be ``const``. 
+
+.. code::
+
+    #include <vector>
+    #include "xtensor/xarray.hpp"
+    #include "xtensor/xview.hpp"
+
+    xt::xarray<double> arr = xt::arange(10);
+
+    // Slice 4, 5, 9
+    auto v1 = xt::view(arr, xt::islice({4, 5, 9}));
+    // => v1 = { 4., 5., 9. }
+
+    // Slice with a variable array
+    const xt::xarray<int> inds = {4, 5, 9};
+    auto v2 = xt::view(arr, xt::islice(inds));
+    // => v2 = { 4., 5., 9. }
   
